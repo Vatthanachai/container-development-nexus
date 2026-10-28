@@ -361,18 +361,39 @@ elk/elasticsearch/data
 elk/elasticsearch/logs
 elk/logstash/logs
 elk/logstash/pipeline
-gitlab/
+gitea/data
+gitea/runner
+gitlab/data
+gitlab/logs
+gitlab/runner
+# gitlab/config holds generated secrets and ssh host keys, track only gitlab.rb
+gitlab/config/*
+!gitlab/config/gitlab.rb
 jenkin/data
 jenkin/logs
-jenkin-agent/
+jenkin-agent/workspace
 mongo/
 oracle/
-pocketbase/
+pocketbase/data
+pocketbase/public
 postgres/data
-rabbit/
+rabbit/data
+rabbit/logs
+rabbit/etc/.erlang.cookie
 redis/
-sonar/
-vault/
+sonar/data
+sonar/logs
+sonar/extensions
+sonar/plugins
+vault/data
+vault/logs
+# vault-config.hcl contains an auto_auth token
+vault/config/vault-config.hcl
 mssqlserver/
 # local secrets
 .env
+
+# service data
+mysql/data
+apidog/data
+apidog/logs

@@ -34,5 +34,5 @@ $> docker compose down
 - Vault
 - Jenkin
 - Jaeger
-- GitLab
-- GitLab-Runner
+- Gitea
+- Gitea-Runner
