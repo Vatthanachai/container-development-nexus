@@ -245,10 +245,9 @@ services:
         condition: on-failure
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.5
     container_name: nexus-elasticsearch
     environment:
-      - xpack.monitoring.templates.enabled=true
       - xpack.watcher.enabled=false
       - xpack.security.enabled=false
       - discovery.type=single-node
@@ -272,7 +271,7 @@ services:
         condition: on-failure
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.5.3
+    image: docker.elastic.co/kibana/kibana:9.5.5
     container_name: nexus-kibana
     environment:
       - KIBANA_SYSTEM_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
@@ -340,7 +339,7 @@ services:
         condition: on-failure
 
   jenkin:
-    image: jenkins/jenkins:lts-dotnet
+    image: nexus-jenkins:2.580.1
     build: 
       context: ./jenkin
       dockerfile: Dockerfile
@@ -348,7 +347,7 @@ services:
     privileged: true
     user: root
     environment:
-      - JAVA_OPTS="-Xmx1024m"
+      - JAVA_OPTS=-Xmx1024m
     ports:
       - 8080:8080
       - 50000:50000
@@ -361,6 +360,27 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure      
+
+  jenkin-agent:
+    image: nexus-jenkins-agent:3391
+    container_name: nexus-jenkin-agent
+    build:
+      context: ./jenkin-agent
+      dockerfile: Dockerfile
+    depends_on:
+      - jenkin
+    environment:
+      - JENKINS_URL=http://jenkin:8080
+      - JENKINS_AGENT_NAME=${JENKINS_AGENT_NAME}
+      - JENKINS_SECRET=${JENKINS_AGENT_SECRET}
+    volumes:
+      - ./jenkin-agent/workspace:/home/jenkins/agent
+    networks:
+      - ns-nexus
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   jaeger:
     image: jaegertracing/all-in-one:1.76.0

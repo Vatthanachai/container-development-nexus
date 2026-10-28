@@ -1,29 +1,29 @@
-FROM jenkins/agent:latest
- # Switch to root to install .NET Core SDK
+FROM jenkins/jenkins:2.580.1-lts-jdk21
+
+# Root is needed to install the toolchains, switched back to jenkins at the end
 USER root
 
-# Just for my sanity... Show me this distro information!
-RUN uname -a && cat /etc/*release
+ENV DOTNET_ROOT=/usr/share/dotnet \
+    DOTNET_NOLOGO=1 \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    PATH=$PATH:/usr/share/dotnet
 
-RUN apt-get update && apt-get full-upgrade -y && \
-    apt-get install -y wget curl libunwind8 gettext apt-transport-https
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl gettext libicu-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \    
-    dpkg -i packages-microsoft-prod.deb
+# .NET SDK, LTS channels
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh && \
+    chmod +x /tmp/dotnet-install.sh && \
+    /tmp/dotnet-install.sh --channel 8.0 --install-dir "$DOTNET_ROOT" && \
+    /tmp/dotnet-install.sh --channel 10.0 --install-dir "$DOTNET_ROOT" && \
+    rm /tmp/dotnet-install.sh && \
+    dotnet --list-sdks
 
-RUN curl -s https://deb.nodesource.com/setup_16.x | bash
-
-RUN apt-get update && apt autoremove -y
-
-# Install the .Net Core framework, set the path, and show the version of core installed.
-RUN apt-get install -y \ 
-    dotnet-sdk-3.1 \
-    dotnet-sdk-6.0 \ 
-    dotnet-sdk-7.0 && \    
-    dotnet --info
-
-RUN apt install -y nodejs && \
+# Node.js LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/* && \
     node --version
 
-# Good idea to switch back to the jenkins user.
 USER jenkins
