@@ -18,7 +18,7 @@ services:
     networks:
       - ns-nexus
     environment:
-      - POSTGRES_PASSWORD=P@ssw0rd!
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_USER=nexus
       - POSTGRES_MULTIPLE_DATABASES=nexus,sonarqubedb,redmine,apidog,infisical,gitea
     volumes:
@@ -42,7 +42,7 @@ services:
       - 6379:6379
     networks:
       - ns-nexus
-    command: redis-server --save 20 1 --loglevel warning --requirepass P@ssw0rd!
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
     volumes:
       - ./redis/data:/data
     deploy:
@@ -74,10 +74,10 @@ services:
     ports:
       - 1521:1521
     environment:
-      - ORACLE_PASSWORD=P@ssw0rd!
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD}
       - ORACLE_DATABASE=nexus
       - APP_USER=nexus
-      - APP_USER_PASSWORD=P@ssw0rd!
+      - APP_USER_PASSWORD=${ORACLE_PASSWORD}
     volumes:
       - ./oracle/data:/opt/oracle/oradata
     networks:
@@ -111,8 +111,8 @@ services:
     environment:
       - MYSQL_DATABASE=nexus
       - MYSQL_USER=nexus
-      - MYSQL_PASSWORD=P@ssw0rd!
-      - MYSQL_ROOT_PASSWORD=P@ssw0rd!
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
     ports:
       - 3306:3306
     volumes:
@@ -163,8 +163,8 @@ services:
     ports:
       - 4108:80
     environment:
-      - POSTGRES_PASSWORD=P@ssw0rd!
-      - PGADMIN_DEFAULT_PASSWORD=P@ssw0rd!
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
       - PGADMIN_DEFAULT_EMAIL=vatthanachai.w@gmail.com
     depends_on:
       postgres:
@@ -184,7 +184,7 @@ services:
       - 4105:15672
     environment:
       - RABBITMQ_DEFAULT_USER=rabbit
-      - RABBITMQ_DEFAULT_PASS=P@ssw0rd!
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     volumes:
       - ./rabbit/etc:/etc/rabbitmq/
       - ./rabbit/data:/var/lib/rabbitmq/
@@ -205,7 +205,7 @@ services:
     environment:
       - SONAR_JDBC_URL=jdbc:postgresql://postgres:5432/sonarqubedb
       - SONAR_JDBC_USERNAME=nexus
-      - SONAR_JDBC_PASSWORD=P@ssw0rd!
+      - SONAR_JDBC_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./sonar/conf:/opt/sonarqube/conf
       - ./sonar/data:/opt/sonarqube/data      
@@ -229,7 +229,7 @@ services:
       - REDMINE_DB_PORT=5432
       - REDMINE_DB_DATABASE=redmine
       - REDMINE_DB_USERNAME=nexus
-      - REDMINE_DB_PASSWORD=P@ssw0rd!
+      - REDMINE_DB_PASSWORD=${POSTGRES_PASSWORD}
       - REDMINE_DB_ENCODING=utf8
       - REDMINE_SECRET_KEY_BASE=${REDMINE_SECRET_KEY_BASE}
     depends_on:
@@ -254,7 +254,7 @@ services:
       - discovery.type=single-node
       - node.name=elasticsearch
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
-      - ELASTIC_PASSWORD=P@ssw0rd!
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     volumes:      
       - ./elk/elasticsearch/data:/usr/share/elasticsearch/data
       - ./elk/elasticsearch/logs:/usr/share/elasticsearch/logs
@@ -275,7 +275,7 @@ services:
     image: docker.elastic.co/kibana/kibana:8.5.3
     container_name: nexus-kibana
     environment:
-      - KIBANA_SYSTEM_PASSWORD=P@ssw0rd!
+      - KIBANA_SYSTEM_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
     volumes:
      - ./elk/kibana/config/kibana.yaml:/usr/share/kibana/config/kibana.yml:ro,Z
     depends_on:
@@ -400,7 +400,7 @@ services:
       - GITEA__database__HOST=postgres:5432
       - GITEA__database__NAME=gitea
       - GITEA__database__USER=nexus
-      - GITEA__database__PASSWD=P@ssw0rd!
+      - GITEA__database__PASSWD=${POSTGRES_PASSWORD}
       - GITEA__server__ROOT_URL=http://localhost:4500/
       - GITEA__server__SSH_DOMAIN=localhost
       - GITEA__server__SSH_PORT=2222
@@ -443,7 +443,7 @@ services:
       - "1443:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=P@ssw0rd
+      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
       - MSSQL_PID=Developer
       - MSSQL_COLLATION=THAI_CI_AS
     volumes:
@@ -471,18 +471,18 @@ services:
       - PG_HOST=postgres
       - PG_PORT=5432
       - PG_USERNAME=nexus
-      - PG_PASSWORD=P@ssw0rd!
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
       - PG_DATABASE=apidog
       - PG_TLS_REJECT_UNAUTHORIZED=false
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=P@ssw0rd!
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_DB=0
       - REDIS_TLS_ENABLED=false
       - JWT_SECRET=${APIDOG_JWT_SECRET}
       - BASE_URL=http://localhost:4300
       - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=P@ssw0rd!
+      - ADMIN_PASSWORD=${APIDOG_ADMIN_PASSWORD}
     volumes:
       - ./apidog/logs:/usr/src/app/logs
       - ./apidog/data:/usr/src/app/app/public/static-upload
@@ -507,8 +507,8 @@ services:
       - NODE_ENV=production
       - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY}
       - AUTH_SECRET=${INFISICAL_AUTH_SECRET}
-      - DB_CONNECTION_URI=postgresql://nexus:P%40ssw0rd%21@postgres:5432/infisical
-      - REDIS_URL=redis://:P%40ssw0rd%21@redis:6379
+      - DB_CONNECTION_URI=postgresql://nexus:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/infisical
+      - REDIS_URL=redis://:${REDIS_PASSWORD_URLENCODED}@redis:6379
       - SITE_URL=http://localhost:4400
       - TELEMETRY_ENABLED=false
     networks:
