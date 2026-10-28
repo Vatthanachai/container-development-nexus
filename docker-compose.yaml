@@ -12,7 +12,7 @@ volumes:
 #service
 services:
   postgres:
-    image: postgres:15.1
+    image: postgres:15.19
     container_name: nexus-postgres
     ports:
       - 5432:5432
@@ -21,7 +21,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=P@ssw0rd!
       - POSTGRES_USER=nexus
-      - POSTGRES_MULTIPLE_DATABASES=nexus,sonarqubedb
+      - POSTGRES_MULTIPLE_DATABASES=nexus,sonarqubedb,redmine,apidog,infisical
     volumes:
       - ./postgres/extensions/init-multi-postgres-databases.sh:/docker-entrypoint-initdb.d/init-multi-postgres-databases.sh
       - ./postgres/data:/var/lib/postgresql/data
@@ -31,14 +31,10 @@ services:
         condition: on-failure
 
   redis:
-    image: redis
+    image: redis:8.8.4
     container_name: nexus-redis
-    depends_on:
-      - postgres
-    links:
-      - postgres
     ports:
-      - 4103:6379
+      - 6379:6379
     networks:
       - ns-nexus
     command: redis-server --save 20 1 --loglevel warning --requirepass P@ssw0rd!
@@ -50,11 +46,11 @@ services:
         condition: on-failure
 
   mongo:
-    image: mongo:latest
+    image: mongo:9.0.4
     container_name: nexus-mongo
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=nexus
-      - MONGO_INITDB_ROOT_PASSWORD=P@ssw0rd!
+#      - MONGO_INITDB_ROOT_USERNAME=root
+#      - MONGO_INITDB_ROOT_PASSWORD=password
       - MONGO_INITDB_DATABASE=nexusdb
     volumes:
       - ./mongo/data:/data/db
@@ -105,7 +101,7 @@ services:
         condition: on-failure
 
   mysql:
-    image: mysql
+    image: mysql:9.7.4
     container_name: nexus-mysql
     environment:
       - MYSQL_DATABASE=nexus
@@ -116,13 +112,15 @@ services:
       - 3306:3306
     volumes:
       - ./mysql/data:/var/lib/mysql
+    networks:
+      - ns-nexus
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
     container_name: nexus-azurite    
     ports:
       - 10000:10000
@@ -138,7 +136,7 @@ services:
         condition: on-failure    
  
   adminer:
-    image: adminer
+    image: adminer:6.2.0
     container_name: nexus-adminer
     ports:
       - 4012:8080
@@ -156,7 +154,7 @@ services:
         condition: on-failure
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:9.18.0
     container_name: nexus-pgadmin
     ports:
       - 4108:80
@@ -174,12 +172,8 @@ services:
         condition: on-failure
 
   rabbit:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3.13.7-management-alpine
     container_name: nexus-rabbit
-    depends_on:
-      - postgres
-    links:
-      - postgres
     ports:
       - 4104:5672
       - 4105:15672
@@ -198,7 +192,7 @@ services:
         condition: on-failure
 
   sonarqube:
-    image: sonarqube:latest
+    image: sonarqube:26.10.0.133078-community
     container_name: nexus-sonarqube
     depends_on:
       - postgres
@@ -224,11 +218,12 @@ services:
         condition: on-failure
 
   redmine:
-    image: redmine:latest
+    image: redmine:6.1.5
     container_name: nexus-redmine
     environment:
       - REDMINE_DB_POSTGRES=postgres
       - REDMINE_DB_PORT=5432
+      - REDMINE_DB_DATABASE=redmine
       - REDMINE_DB_USERNAME=nexus
       - REDMINE_DB_PASSWORD=P@ssw0rd!
       - REDMINE_DB_ENCODING=utf8mb4
@@ -341,7 +336,6 @@ services:
       restart_policy:
         condition: on-failure
 
-
   jenkin:
     image: jenkins/jenkins:lts-dotnet
     build: 
@@ -366,7 +360,7 @@ services:
         condition: on-failure      
 
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.76.0
     container_name: nexus-jaeger
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
@@ -391,7 +385,7 @@ services:
         condition: on-failure   
 
   gitlab:
-    image: gitlab/gitlab-ce:latest
+    image: gitlab/gitlab-ce:19.5.1-ce.0
     container_name: nexus-gitlab
     hostname: 'localhost'
     environment:
@@ -412,7 +406,7 @@ services:
         condition: on-failure        
 
   gitlab-runner:
-    image: gitlab/gitlab-runner:alpine
+    image: gitlab/gitlab-runner:alpine-v19.5.1
     container_name: nexus-gitlab-runner
     depends_on:
       - gitlab
@@ -426,3 +420,80 @@ services:
       restart_policy:
         condition: on-failure   
         
+  mssqlserver:    
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: nexus-mssql-server
+    ports:
+      - "1443:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=P@ssw0rd
+      - MSSQL_PID=Developer
+      - MSSQL_COLLATION=THAI_CI_AS
+    volumes:
+      - ./mssqlserver/data:/var/opt/mssql
+    networks:
+      - ns-nexus
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  apidog:
+    image: apidog/apidog-ee:2.7.38
+    container_name: nexus-apidog
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - 4300:80
+    environment:
+      - LICENSE=${APIDOG_LICENSE}
+      - DB_DIALECT=postgresql
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USERNAME=nexus
+      - PG_PASSWORD=P@ssw0rd!
+      - PG_DATABASE=apidog
+      - PG_TLS_REJECT_UNAUTHORIZED=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=P@ssw0rd!
+      - REDIS_DB=0
+      - REDIS_TLS_ENABLED=false
+      - JWT_SECRET=${APIDOG_JWT_SECRET}
+      - BASE_URL=http://localhost:4300
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=P@ssw0rd!
+    volumes:
+      - ./apidog/logs:/usr/src/app/logs
+      - ./apidog/data:/usr/src/app/app/public/static-upload
+    networks:
+      - ns-nexus
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  infisical:
+    image: infisical/infisical:v0.167.4
+    container_name: nexus-infisical
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - 4400:8080
+    environment:
+      - NODE_ENV=production
+      - ENCRYPTION_KEY=${INFISICAL_ENCRYPTION_KEY}
+      - AUTH_SECRET=${INFISICAL_AUTH_SECRET}
+      - DB_CONNECTION_URI=postgresql://nexus:P%40ssw0rd%21@postgres:5432/infisical
+      - REDIS_URL=redis://:P%40ssw0rd%21@redis:6379
+      - SITE_URL=http://localhost:4400
+      - TELEMETRY_ENABLED=false
+    networks:
+      - ns-nexus
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure

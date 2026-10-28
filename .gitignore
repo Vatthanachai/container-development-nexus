@@ -373,3 +373,6 @@ rabbit/
 redis/
 sonar/
 vault/
+mssqlserver/
+# local secrets
+.env
