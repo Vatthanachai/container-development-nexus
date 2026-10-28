@@ -227,7 +227,7 @@ services:
       - REDMINE_DB_USERNAME=nexus
       - REDMINE_DB_PASSWORD=P@ssw0rd!
       - REDMINE_DB_ENCODING=utf8mb4
-      - REDMINE_SECRET_KEY_BASE=t^x3K7%4ZNgXACPk17pN
+      - REDMINE_SECRET_KEY_BASE=${REDMINE_SECRET_KEY_BASE}
     depends_on:
       - postgres
     ports:
